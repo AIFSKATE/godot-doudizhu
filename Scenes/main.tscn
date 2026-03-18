@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://cugnmra6m7ks"]
+
+[ext_resource type="Script" uid="uid://b220c0c3d6mjq" path="res://Scenes/Main.cs" id="1_jjgbg"]
+
+[node name="Main" type="Control" unique_id=392684241]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_jjgbg")
