@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://de0si45yvrhh2" path="res://Scenes/DouDizhuGameManager.cs" id="1_sogkt"]
 
-[node name="DouDizhuGameManager" type="Control" unique_id=138171513 node_paths=PackedStringArray("_lblUpFarmer", "_lblDownFarmer", "_lblGameStatus", "_lblBombCount", "_playedCardsContainer", "_handCardsContainer", "_btnPlay", "_btnPass", "_btnHint")]
+[node name="DouDizhuGameManager" type="Control" unique_id=138171513 node_paths=PackedStringArray("_lblUpFarmer", "_lblDownFarmer", "_lblGameStatus", "_lblBombCount", "_playedCardsSelf", "_playedCardsUp", "_playedCardsDown", "_handCardsContainer", "_btnPlay", "_btnPass", "_btnHint")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -14,7 +14,9 @@ _lblUpFarmer = NodePath("_lblUpFarmer")
 _lblDownFarmer = NodePath("_lblDownFarmer")
 _lblGameStatus = NodePath("_lblGameStatus")
 _lblBombCount = NodePath("_lblBombCount")
-_playedCardsContainer = NodePath("_playedCardsContainer")
+_playedCardsSelf = NodePath("_playedCardsSelf")
+_playedCardsUp = NodePath("_playedCardsUp")
+_playedCardsDown = NodePath("_playedCardsDown")
 _handCardsContainer = NodePath("_handCardsContainer")
 _btnPlay = NodePath("_btnPlay")
 _btnPass = NodePath("_btnPass")
@@ -55,27 +57,49 @@ vertical_alignment = 1
 
 [node name="_lblBombCount" type="Label" parent="." unique_id=1668489151]
 layout_mode = 1
-anchors_preset = 4
-anchor_top = 0.5
-anchor_bottom = 0.5
-offset_top = -25.0
-offset_right = 200.0
-offset_bottom = 25.0
-grow_vertical = 2
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 50.0
+offset_right = 100.0
+offset_bottom = 100.0
+grow_horizontal = 2
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="_playedCardsContainer" type="HBoxContainer" parent="." unique_id=2142547658]
+[node name="_playedCardsSelf" type="Control" parent="." unique_id=1433352935]
 layout_mode = 1
-anchors_preset = 14
-anchor_top = 0.5
-anchor_right = 1.0
-anchor_bottom = 0.5
-offset_left = 150.0
-offset_top = -226.0
-offset_right = -150.0
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -20.0
+offset_top = -460.0
+offset_right = 20.0
+offset_bottom = -420.0
 grow_horizontal = 2
-grow_vertical = 2
+grow_vertical = 0
+
+[node name="_playedCardsUp" type="Control" parent="." unique_id=273889027]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 300.0
+offset_top = 200.0
+offset_right = 340.0
+offset_bottom = 240.0
+
+[node name="_playedCardsDown" type="Control" parent="." unique_id=2075058406]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -340.0
+offset_top = 200.0
+offset_right = -300.0
+offset_bottom = 240.0
+grow_horizontal = 0
 
 [node name="_handCardsContainer" type="Control" parent="." unique_id=2101359033]
 layout_mode = 1

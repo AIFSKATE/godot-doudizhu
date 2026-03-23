@@ -1,18 +1,16 @@
 using Godot;
 
-/// <summary>
-/// 独立的卡牌 UI 组件。
-/// 支持设定在圆弧上的基准位置，并实现鼠标悬浮、选中时的法线外扩效果。
-/// </summary>
 public partial class CardButton : TextureButton
 {
     public int CardValue { get; private set; }
     public bool IsSelected { get; private set; }
     public string CardSuit { get; private set; }
 
-    // 记录卡牌在拱形上的基准位置和旋转角度
     public Vector2 BasePosition { get; private set; }
     public float BaseRotation { get; private set; }
+
+    // 【新增】：悬浮时弹出的基本方向向量。默认是 (0, -1) 即向上
+    public Vector2 HoverDirection { get; set; } = new Vector2(0, -1);
 
     private bool _isHovered = false;
 
@@ -22,7 +20,6 @@ public partial class CardButton : TextureButton
 
     public override void _Ready()
     {
-        // 绑定鼠标悬浮与移出事件
         MouseEntered += OnMouseEntered;
         MouseExited += OnMouseExited;
     }
@@ -42,8 +39,6 @@ public partial class CardButton : TextureButton
             IgnoreTextureSize = true;
             StretchMode = StretchModeEnum.Scale;
             CustomMinimumSize = new Vector2(100, 140);
-
-            // 极其重要：将旋转中心点设置在卡牌的几何中心
             PivotOffset = CustomMinimumSize / 2f;
         }
         else
@@ -68,9 +63,6 @@ public partial class CardButton : TextureButton
         }
     }
 
-    /// <summary>
-    /// 由主控程序调用，设定卡牌在圆弧上的固定落点和角度
-    /// </summary>
     public void SetArchTransform(Vector2 pos, float rot)
     {
         BasePosition = pos;
@@ -78,8 +70,6 @@ public partial class CardButton : TextureButton
         Position = pos;
         Rotation = rot;
     }
-
-    // --- 交互与动画逻辑 ---
 
     private void OnMouseEntered()
     {
@@ -100,21 +90,16 @@ public partial class CardButton : TextureButton
         UpdateTransform();
     }
 
-    /// <summary>
-    /// 核心逻辑：沿法线方向移动
-    /// </summary>
     private void UpdateTransform()
     {
         float offsetDistance = 0;
 
-        // 悬浮时向外延展 15px，选中时再叠加 20px
         if (_isHovered) offsetDistance += 15f;
         if (IsSelected) offsetDistance += 20f;
 
-        // 计算法线向量：向上的基本法线 (0, -1) 根据卡牌的旋转角度进行旋转
-        Vector2 normal = new Vector2(0, -1).Rotated(BaseRotation);
+        // 【核心修改】：现在不再定死为向上，而是根据外部指定的 HoverDirection 进行旋转和偏移
+        Vector2 normal = HoverDirection.Rotated(BaseRotation);
 
-        // 卡牌当前位置 = 基准位置 + 法线方向 * 偏移距离
         Position = BasePosition + normal * offsetDistance;
     }
 }
