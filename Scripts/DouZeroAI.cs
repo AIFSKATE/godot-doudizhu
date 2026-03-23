@@ -16,15 +16,12 @@ public static class DouZeroAI
     {
         try
         {
-            // 确保只初始化一次
             if (_sessionLandlord != null) return;
 
-            // 获取绝对路径
             string pathL = ProjectSettings.GlobalizePath("res://Baseline/landlord.onnx");
             string pathUp = ProjectSettings.GlobalizePath("res://Baseline/landlord_up.onnx");
             string pathDown = ProjectSettings.GlobalizePath("res://Baseline/landlord_down.onnx");
 
-            // 加载三个会话
             _sessionLandlord = new InferenceSession(pathL);
             _sessionUp = new InferenceSession(pathUp);
             _sessionDown = new InferenceSession(pathDown);
@@ -37,49 +34,85 @@ public static class DouZeroAI
         }
     }
 
-    // 地主推理入口 (373维)
     public static int GetLandlordAction(float[] z, float[] x)
     {
         return RunInference(_sessionLandlord, z, x, 373);
     }
 
-    // 农民上家推理入口 (484维)
     public static int GetUpFarmerAction(float[] z, float[] x)
     {
         return RunInference(_sessionUp, z, x, 484);
     }
 
-    // 农民下家推理入口 (484维)
     public static int GetDownFarmerAction(float[] z, float[] x)
     {
         return RunInference(_sessionDown, z, x, 484);
     }
 
-    // 通用的核心推理逻辑
     private static int RunInference(InferenceSession session, float[] z, float[] x, int xDim)
     {
         if (session == null)
         {
             GD.PrintErr("Session 未初始化！");
-            return -1;
+            return 0;
         }
 
-        // 构造 Tensor
+        // 动态推断传入了多少种合法的牌型动作 (BatchSize)
+        int batchSize = x.Length / xDim;
+
         var inputs = new List<NamedOnnxValue>
-        {
-            NamedOnnxValue.CreateFromTensor("input_z", new DenseTensor<float>(z, new[] { 1, 5, 162 })),
-            NamedOnnxValue.CreateFromTensor("input_x", new DenseTensor<float>(x, new[] { 1, xDim }))
-        };
+    {
+        NamedOnnxValue.CreateFromTensor("input_z", new DenseTensor<float>(z, new[] { batchSize, 5, 162 })),
+        NamedOnnxValue.CreateFromTensor("input_x", new DenseTensor<float>(x, new[] { batchSize, xDim }))
+    };
 
-        // 运行并获取 Argmax
+        // 运行推理，获取结果
         using var results = session.Run(inputs);
-        var output = results.First().AsEnumerable<float>().ToArray();
+        var firstOutput = results.First();
 
-        // 找到分值最高的动作索引
-        return Array.IndexOf(output, output.Max());
+        int bestIdx = 0; // 用于记录最高胜率的动作索引
+
+        // 【情况 A】：模型输出的得分是 Int64 (long) 类型
+        if (firstOutput.Value is Tensor<long> longTensor)
+        {
+            long[] scores = longTensor.ToArray(); // 拿到所有牌型的得分数组
+            long maxScore = long.MinValue;
+
+            // 遍历所有得分，手动执行 ArgMax 寻找最高概率/得分的动作
+            for (int i = 0; i < scores.Length; i++)
+            {
+                if (scores[i] > maxScore)
+                {
+                    maxScore = scores[i];
+                    bestIdx = i;
+                }
+            }
+        }
+        // 【情况 B】：模型输出的得分是 float 类型 (更常见的概率格式，做个兼容兜底)
+        else if (firstOutput.Value is Tensor<float> floatTensor)
+        {
+            float[] scores = floatTensor.ToArray(); // 拿到所有牌型的胜率数组
+            float maxScore = float.MinValue;
+
+            for (int i = 0; i < scores.Length; i++)
+            {
+                if (scores[i] > maxScore)
+                {
+                    maxScore = scores[i];
+                    bestIdx = i;
+                }
+            }
+        }
+        else
+        {
+            GD.PrintErr($"❌ 无法解析的模型输出类型: {firstOutput.Value?.GetType().FullName}");
+            return 0; // 兜底返回第一个合法动作
+        }
+
+        // 返回能带来最高胜率的动作索引
+        return bestIdx;
     }
 
-    // 释放资源
     public static void Dispose()
     {
         _sessionLandlord?.Dispose();
