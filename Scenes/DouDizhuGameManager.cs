@@ -192,8 +192,10 @@ public partial class DouDizhuGameManager : Control
             {
                 if (role == _humanRole)
                 {
-                    // 玩家自己出牌：直接从手里拿（复用实体节点）
-                    CardButton matchedBtn = _humanHandCards.FirstOrDefault(cb => cb.CardValue == c);
+                    // 🌟 核心修复：优先寻找玩家真正选中的那张实体牌（防止多张同点数牌时找错花色）
+                    // 兜底防错：如果异常情况没有选中的牌，再随便找一张同点数的
+                    CardButton matchedBtn = _humanHandCards.FirstOrDefault(cb => cb.CardValue == c && cb.IsSelected)
+                                         ?? _humanHandCards.FirstOrDefault(cb => cb.CardValue == c);
 
                     if (matchedBtn != null)
                     {
