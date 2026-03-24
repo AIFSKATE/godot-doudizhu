@@ -1,0 +1,10 @@
+[gd_resource type="Theme" format=3 uid="uid://dfcy7xl5v3asn"]
+
+[ext_resource type="Texture2D" uid="uid://b2h4owp16xtcx" path="res://UI/UiAssets/table.webp" id="1_xqu3b"]
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_1scor"]
+texture = ExtResource("1_xqu3b")
+
+[resource]
+TablePanel/base_type = &"Panel"
+TablePanel/styles/panel = SubResource("StyleBoxTexture_1scor")

@@ -52,6 +52,8 @@ public partial class CardButton : TextureButton
 
     private string GetImageFileName(int value, string suit)
     {
+        if (value == 0 && suit == "back") return "CardBack.webp";
+
         if (value == 20) return "black_joker.png";
         if (value == 30) return "red_joker.png";
 

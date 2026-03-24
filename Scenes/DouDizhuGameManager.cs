@@ -16,6 +16,9 @@ public partial class DouDizhuGameManager : Control
     [Export] private Control _playedCardsUp;
     [Export] private Control _playedCardsDown;
 
+    [Export] private Control _upCardsContainer;
+    [Export] private Control _downCardsContainer;
+
     [Export] private Control _handCardsContainer;
     [Export] private Button _btnPlay;
     [Export] private Button _btnPass;
@@ -68,7 +71,6 @@ public partial class DouDizhuGameManager : Control
         _env = new Env("adp");
         _currentObs = _env.Reset();
 
-        // 游戏开始，清空花色计数器
         _globalSuitCounter.Clear();
 
         InitializeHand();
@@ -119,10 +121,9 @@ public partial class DouDizhuGameManager : Control
 
         foreach (int card in handCards)
         {
-            // 大道至简：来一个点数，查一下它出现了几次，按顺序给花色
             int count = _globalSuitCounter.GetValueOrDefault(card, 0);
             string suit = Suits[count % 4];
-            _globalSuitCounter[card] = count + 1; // 计数加一
+            _globalSuitCounter[card] = count + 1;
 
             var btn = new CardButton();
             btn.Initialize(card, suit);
@@ -132,7 +133,6 @@ public partial class DouDizhuGameManager : Control
             _humanHandCards.Add(btn);
         }
 
-        // 🌟 只在最初发牌时排版一次
         LayoutHandCardsArched(_humanHandCards);
     }
 
@@ -140,9 +140,61 @@ public partial class DouDizhuGameManager : Control
     {
         var info = _env.GameInfoset;
 
-        if (_lblUpFarmer != null) _lblUpFarmer.Text = $"上家 (AI)\n剩余手牌: {info.NumCardsLeftDict["landlord_up"]} 张";
-        if (_lblDownFarmer != null) _lblDownFarmer.Text = $"下家 (AI)\n剩余手牌: {info.NumCardsLeftDict["landlord_down"]} 张";
+        int upCardsLeft = info.NumCardsLeftDict["landlord_up"];
+        int downCardsLeft = info.NumCardsLeftDict["landlord_down"];
+
+        if (_lblUpFarmer != null) _lblUpFarmer.Text = $"上家 (AI)\n剩余手牌: {upCardsLeft} 张";
+        if (_lblDownFarmer != null) _lblDownFarmer.Text = $"下家 (AI)\n剩余手牌: {downCardsLeft} 张";
         if (_lblBombCount != null) _lblBombCount.Text = $"当前炸弹数: {info.BombNum}";
+
+        UpdateHiddenCards(_upCardsContainer, upCardsLeft, "up");
+        UpdateHiddenCards(_downCardsContainer, downCardsLeft, "down");
+    }
+
+    private void UpdateHiddenCards(Control container, int targetCount, string role)
+    {
+        if (container == null) return;
+
+        int currentCount = container.GetChildCount();
+        Vector2 hoverDir = role == "up" ? new Vector2(1, 0) : new Vector2(-1, 0);
+
+        if (currentCount > targetCount)
+        {
+            int cardsToRemove = currentCount - targetCount;
+            for (int i = 0; i < cardsToRemove; i++)
+            {
+                Node child = container.GetChild(container.GetChildCount() - 1);
+                container.RemoveChild(child);
+                child.QueueFree();
+            }
+            return;
+        }
+        else if (currentCount < targetCount)
+        {
+            int cardsToAdd = targetCount - currentCount;
+            for (int i = 0; i < cardsToAdd; i++)
+            {
+                var backBtn = new CardButton();
+                backBtn.Initialize(0, "back");
+                backBtn.HoverDirection = hoverDir;
+                backBtn.CustomMinimumSize = new Vector2(100, 140);
+                container.AddChild(backBtn);
+            }
+
+            List<CardButton> hiddenCardsList = new List<CardButton>();
+            foreach (Node child in container.GetChildren())
+            {
+                if (child is CardButton cb)
+                {
+                    hiddenCardsList.Add(cb);
+                }
+            }
+
+            if (hiddenCardsList.Count > 0)
+            {
+                LayoutPlayedCardsVertical(container, hiddenCardsList, spacing: 20f);
+            }
+        }
     }
 
     private void ShowPlayedCards(List<int> cards, string role)
@@ -192,8 +244,6 @@ public partial class DouDizhuGameManager : Control
             {
                 if (role == _humanRole)
                 {
-                    // 🌟 核心修复：优先寻找玩家真正选中的那张实体牌（防止多张同点数牌时找错花色）
-                    // 兜底防错：如果异常情况没有选中的牌，再随便找一张同点数的
                     CardButton matchedBtn = _humanHandCards.FirstOrDefault(cb => cb.CardValue == c && cb.IsSelected)
                                          ?? _humanHandCards.FirstOrDefault(cb => cb.CardValue == c);
 
@@ -217,7 +267,6 @@ public partial class DouDizhuGameManager : Control
                 }
                 else
                 {
-                    // AI 出牌：因为它是按需生成的，所以继续沿用全局计数器按顺序取花色
                     int count = _globalSuitCounter.GetValueOrDefault(c, 0);
                     string suit = Suits[count % 4];
                     _globalSuitCounter[c] = count + 1;
@@ -236,7 +285,6 @@ public partial class DouDizhuGameManager : Control
             else
                 LayoutPlayedCardsLinear(targetContainer, newPlayedCards);
 
-            // 🌟 只有当玩家自己打出了牌，手牌减少了，才需要重新排版手牌
             if (role == _humanRole)
             {
                 LayoutHandCardsArched(_humanHandCards);
@@ -288,8 +336,8 @@ public partial class DouDizhuGameManager : Control
         int count = cards.Count;
         if (count == 0) return;
 
-        float cardWidth = 70f;
-        float cardHeight = 98f;
+        float cardWidth = cards[0].CustomMinimumSize.X;
+        float cardHeight = cards[0].CustomMinimumSize.Y;
         float spacing = 30f;
 
         float totalWidth = cardWidth + (count - 1) * spacing;
@@ -304,18 +352,17 @@ public partial class DouDizhuGameManager : Control
         }
     }
 
-    private void LayoutPlayedCardsVertical(Control container, List<CardButton> cards)
+    private void LayoutPlayedCardsVertical(Control container, List<CardButton> cards, float spacing = 30f)
     {
         int count = cards.Count;
         if (count == 0) return;
 
-        float cardWidth = 70f;
-        float cardHeight = 98f;
-        float spacing = 30f;
+        float cardWidth = cards[0].CustomMinimumSize.X;
 
-        float totalHeight = cardHeight + (count - 1) * spacing;
         float centerX = (container.Size.X - cardWidth) / 2f;
-        float startY = (container.Size.Y - totalHeight) / 2f;
+
+        // 🌟 核心修改：让卡牌直接从 Control 容器的最顶端 (y = 0) 开始排布
+        float startY = 0f;
 
         for (int i = 0; i < count; i++)
         {

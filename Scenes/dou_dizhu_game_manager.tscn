@@ -1,8 +1,9 @@
 [gd_scene format=3 uid="uid://dn6q8xipm67c1"]
 
 [ext_resource type="Script" uid="uid://de0si45yvrhh2" path="res://Scenes/DouDizhuGameManager.cs" id="1_sogkt"]
+[ext_resource type="Theme" uid="uid://dfcy7xl5v3asn" path="res://UI/DouDiZhu.tres" id="2_d6eoc"]
 
-[node name="DouDizhuGameManager" type="Control" unique_id=138171513 node_paths=PackedStringArray("_lblUpFarmer", "_lblDownFarmer", "_lblGameStatus", "_lblBombCount", "_playedCardsSelf", "_playedCardsUp", "_playedCardsDown", "_handCardsContainer", "_btnPlay", "_btnPass", "_btnHint")]
+[node name="DouDizhuGameManager" type="Control" unique_id=138171513 node_paths=PackedStringArray("_lblUpFarmer", "_lblDownFarmer", "_lblGameStatus", "_lblBombCount", "_playedCardsSelf", "_playedCardsUp", "_playedCardsDown", "_upCardsContainer", "_downCardsContainer", "_handCardsContainer", "_btnPlay", "_btnPass", "_btnHint")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -17,15 +18,28 @@ _lblBombCount = NodePath("_lblBombCount")
 _playedCardsSelf = NodePath("_playedCardsSelf")
 _playedCardsUp = NodePath("_playedCardsUp")
 _playedCardsDown = NodePath("_playedCardsDown")
+_upCardsContainer = NodePath("_upCardsContainer")
+_downCardsContainer = NodePath("_downCardsContainer")
 _handCardsContainer = NodePath("_handCardsContainer")
 _btnPlay = NodePath("_btnPlay")
 _btnPass = NodePath("_btnPass")
 _btnHint = NodePath("_btnHint")
 
+[node name="Panel" type="Panel" parent="." unique_id=2095328437]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_d6eoc")
+theme_type_variation = &"TablePanel"
+
 [node name="_lblUpFarmer" type="Label" parent="." unique_id=1772396836]
 layout_mode = 1
+offset_left = 100.0
 offset_top = 100.0
-offset_right = 200.0
+offset_right = 300.0
 offset_bottom = 150.0
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -35,8 +49,9 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -200.0
+offset_left = -300.0
 offset_top = 100.0
+offset_right = -100.0
 offset_bottom = 150.0
 grow_horizontal = 0
 horizontal_alignment = 1
@@ -48,9 +63,9 @@ anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -100.0
-offset_top = 100.0
+offset_top = 150.0
 offset_right = 100.0
-offset_bottom = 150.0
+offset_bottom = 200.0
 grow_horizontal = 2
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -61,9 +76,9 @@ anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -100.0
-offset_top = 50.0
+offset_top = 100.0
 offset_right = 100.0
-offset_bottom = 100.0
+offset_bottom = 150.0
 grow_horizontal = 2
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -76,9 +91,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -20.0
-offset_top = -460.0
+offset_top = -510.0
 offset_right = 20.0
-offset_bottom = -420.0
+offset_bottom = -470.0
 grow_horizontal = 2
 grow_vertical = 0
 
@@ -101,6 +116,25 @@ offset_right = -300.0
 offset_bottom = 240.0
 grow_horizontal = 0
 
+[node name="_downCardsContainer" type="Control" parent="." unique_id=1363533095]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -215.0
+offset_top = 250.0
+offset_right = -175.0
+offset_bottom = 290.0
+grow_horizontal = 0
+
+[node name="_upCardsContainer" type="Control" parent="." unique_id=284422189]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 175.0
+offset_top = 250.0
+offset_right = 215.0
+offset_bottom = 290.0
+
 [node name="_handCardsContainer" type="Control" parent="." unique_id=2101359033]
 layout_mode = 1
 anchors_preset = 7
@@ -109,9 +143,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -20.0
-offset_top = -165.0
+offset_top = -215.0
 offset_right = 20.0
-offset_bottom = -125.0
+offset_bottom = -175.0
 grow_horizontal = 2
 grow_vertical = 0
 
@@ -123,9 +157,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = 90.0
-offset_top = -300.0
+offset_top = -350.0
 offset_right = 210.0
-offset_bottom = -250.0
+offset_bottom = -300.0
 grow_horizontal = 2
 grow_vertical = 0
 text = "出牌"
@@ -138,9 +172,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -210.0
-offset_top = -300.0
+offset_top = -350.0
 offset_right = -90.0
-offset_bottom = -250.0
+offset_bottom = -300.0
 grow_horizontal = 2
 grow_vertical = 0
 text = "Pass"
@@ -153,9 +187,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -60.0
-offset_top = -300.0
+offset_top = -350.0
 offset_right = 60.0
-offset_bottom = -250.0
+offset_bottom = -300.0
 grow_horizontal = 2
 grow_vertical = 0
 text = "提示"
