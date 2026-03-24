@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://de0si45yvrhh2" path="res://Scenes/DouDizhuGameManager.cs" id="1_sogkt"]
 [ext_resource type="Theme" uid="uid://dfcy7xl5v3asn" path="res://UI/DouDiZhu.tres" id="2_d6eoc"]
 
-[node name="DouDizhuGameManager" type="Control" unique_id=138171513 node_paths=PackedStringArray("_lblUpFarmer", "_lblDownFarmer", "_lblGameStatus", "_lblBombCount", "_playedCardsSelf", "_playedCardsUp", "_playedCardsDown", "_upCardsContainer", "_downCardsContainer", "_handCardsContainer", "_btnPlay", "_btnPass", "_btnHint")]
+[node name="DouDizhuGameManager" type="Control" unique_id=138171513 node_paths=PackedStringArray("_lblUpFarmer", "_lblDownFarmer", "_lblGameStatus", "_lblBombCount", "_playedCardsSelf", "_playedCardsUp", "_playedCardsDown", "_upCardsContainer", "_downCardsContainer", "_handCardsContainer", "_btnStart", "_btnPlay", "_btnPass", "_btnHint")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -21,6 +21,7 @@ _playedCardsDown = NodePath("_playedCardsDown")
 _upCardsContainer = NodePath("_upCardsContainer")
 _downCardsContainer = NodePath("_downCardsContainer")
 _handCardsContainer = NodePath("_handCardsContainer")
+_btnStart = NodePath("_btnStart")
 _btnPlay = NodePath("_btnPlay")
 _btnPass = NodePath("_btnPass")
 _btnHint = NodePath("_btnHint")
@@ -193,3 +194,18 @@ offset_bottom = -300.0
 grow_horizontal = 2
 grow_vertical = 0
 text = "提示"
+
+[node name="_btnStart" type="Button" parent="." unique_id=43730026]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -60.0
+offset_top = -450.0
+offset_right = 60.0
+offset_bottom = -400.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "开始"

@@ -20,6 +20,8 @@ public partial class DouDizhuGameManager : Control
     [Export] private Control _downCardsContainer;
 
     [Export] private Control _handCardsContainer;
+
+    [Export] private Button _btnStart;
     [Export] private Button _btnPlay;
     [Export] private Button _btnPass;
     [Export] private Button _btnHint;
@@ -38,24 +40,27 @@ public partial class DouDizhuGameManager : Control
     private List<CardButton> _selectedCards = new List<CardButton>();
     private Observation _currentObs;
 
-    // 🌟 性能优化：全局记录玩家当前的手牌实体
+    // 全局记录玩家当前的手牌实体
     private List<CardButton> _humanHandCards = new List<CardButton>();
 
     private static readonly string[] Suits = { "clubs", "diamonds", "hearts", "spades" };
 
-    // 🌟 极简防作弊：全局发牌计数器。记录某个点数已经发出了几次，按顺序发花色
+    // 全局发牌计数器
     private Dictionary<int, int> _globalSuitCounter = new Dictionary<int, int>();
 
     public override void _Ready()
     {
         CheckAndConnectUI();
         DouZeroAI.Initialize();
-        StartGameLoop();
+
+        // 🌟 游戏加载完毕，不直接开始，而是进入待机状态
+        EnterStandbyState();
     }
 
     private void CheckAndConnectUI()
     {
-        if (_btnPlay == null || _btnPass == null || _btnHint == null || _handCardsContainer == null)
+        // 加入了对 _btnStart 的非空校验
+        if (_btnPlay == null || _btnPass == null || _btnHint == null || _handCardsContainer == null || _btnStart == null)
         {
             GD.PrintErr("⚠️ UI 节点未完全赋值！请在 Godot 编辑器中拖入对应的 UI 节点。");
             return;
@@ -64,14 +69,68 @@ public partial class DouDizhuGameManager : Control
         _btnPass.Pressed += OnBtnPassPressed;
         _btnHint.Pressed += OnBtnHintPressed;
         _btnPlay.Pressed += OnBtnPlayPressed;
+
+        // 🌟 绑定开始按钮事件
+        _btnStart.Pressed += OnBtnStartPressed;
+    }
+
+    // 🌟 辅助方法：立即从树中移除子节点并排队释放，解决 QueueFree 的帧延迟读取问题
+    private void ClearContainer(Control container)
+    {
+        if (container == null) return;
+        foreach (Node child in container.GetChildren())
+        {
+            container.RemoveChild(child); // 立即脱离父节点，确保 GetChildCount() 瞬间归零
+            child.QueueFree();            // 安全释放内存
+        }
+    }
+
+    // 🌟 待机状态：显示开始按钮，隐藏所有出牌相关 UI
+    private void EnterStandbyState()
+    {
+        _btnStart.Visible = true;
+        _btnStart.Disabled = false;
+
+        SetActionButtonsVisible(false);
+
+        if (_lblGameStatus != null) _lblGameStatus.Text = "点击【开始游戏】进入对局";
+        if (_lblUpFarmer != null) _lblUpFarmer.Text = "";
+        if (_lblDownFarmer != null) _lblDownFarmer.Text = "";
+        if (_lblBombCount != null) _lblBombCount.Text = "";
+    }
+
+    // 🌟 点击开始按钮：清理残局，切换 UI 状态，启动主循环
+    private void OnBtnStartPressed()
+    {
+        _btnStart.Visible = false;      // 隐藏开始按钮
+        SetActionButtonsVisible(true);  // 显示行动按钮（此时先禁用，等轮到玩家再激活）
+        EnableActionButtons(false);
+
+        ClearBoard();                   // 大扫除
+        StartGameLoop();                // 发车！
+    }
+
+    // 🌟 极其重要的残局清理逻辑
+    private void ClearBoard()
+    {
+        // 1. 使用新增的 ClearContainer 方法，立刻清空所有物理节点
+        ClearContainer(_handCardsContainer);
+        ClearContainer(_playedCardsSelf);
+        ClearContainer(_playedCardsUp);
+        ClearContainer(_playedCardsDown);
+        ClearContainer(_upCardsContainer);
+        ClearContainer(_downCardsContainer);
+
+        // 2. 清空所有的逻辑集合与发牌器状态
+        _humanHandCards.Clear();
+        _selectedCards.Clear();
+        _globalSuitCounter.Clear();
     }
 
     private async void StartGameLoop()
     {
         _env = new Env("adp");
         _currentObs = _env.Reset();
-
-        _globalSuitCounter.Clear();
 
         InitializeHand();
         UpdateUI();
@@ -103,18 +162,19 @@ public partial class DouDizhuGameManager : Control
             ShowPlayedCards(chosenAction, actingRole);
             UpdateUI();
 
-            await ToSignal(GetTree().CreateTimer(1.0f), SceneTreeTimer.SignalName.Timeout);
+            await ToSignal(GetTree().CreateTimer(0.5f), SceneTreeTimer.SignalName.Timeout);
         }
 
         string winner = _env.GameWinner;
         _lblGameStatus.Text = winner == "landlord" ? "游戏结束！地主获胜！" : "游戏结束！农民获胜！";
+
+        // 🌟 游戏彻底结束，直接回到待机状态，不需要等待
+        EnterStandbyState();
     }
 
     private void InitializeHand()
     {
-        foreach (Node child in _handCardsContainer.GetChildren()) child.QueueFree();
-        _selectedCards.Clear();
-        _humanHandCards.Clear();
+        ClearContainer(_handCardsContainer); // 同样使用新的立刻清理方法
 
         var handCards = new List<int>(_env.GameInfoset.AllHandcards[_humanRole]);
         handCards.Sort((a, b) => b.CompareTo(a));
@@ -224,7 +284,7 @@ public partial class DouDizhuGameManager : Control
 
         if (targetContainer == null) return;
 
-        foreach (Node child in targetContainer.GetChildren()) child.QueueFree();
+        ClearContainer(targetContainer); // 同样使用立刻清理方法，防止重叠和闪烁
 
         if (cards.Count == 0)
         {
@@ -358,10 +418,7 @@ public partial class DouDizhuGameManager : Control
         if (count == 0) return;
 
         float cardWidth = cards[0].CustomMinimumSize.X;
-
         float centerX = (container.Size.X - cardWidth) / 2f;
-
-        // 🌟 核心修改：让卡牌直接从 Control 容器的最顶端 (y = 0) 开始排布
         float startY = 0f;
 
         for (int i = 0; i < count; i++)
@@ -462,6 +519,15 @@ public partial class DouDizhuGameManager : Control
         }
     }
 
+    // 🌟 控制行动按钮的显示与隐藏
+    private void SetActionButtonsVisible(bool visible)
+    {
+        if (_btnPlay != null) _btnPlay.Visible = visible;
+        if (_btnPass != null) _btnPass.Visible = visible;
+        if (_btnHint != null) _btnHint.Visible = visible;
+    }
+
+    // 控制行动按钮的交互状态
     private void EnableActionButtons(bool enable)
     {
         if (_btnPlay != null) _btnPlay.Disabled = !enable;
