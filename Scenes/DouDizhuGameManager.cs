@@ -168,7 +168,6 @@ public partial class DouDizhuGameManager : Control
         string winner = _env.GameWinner;
         _lblGameStatus.Text = winner == "landlord" ? "游戏结束！地主获胜！" : "游戏结束！农民获胜！";
 
-        // 🌟 游戏彻底结束，直接回到待机状态，不需要等待
         EnterStandbyState();
     }
 
@@ -187,8 +186,7 @@ public partial class DouDizhuGameManager : Control
 
             var btn = new CardButton();
             btn.Initialize(card, suit);
-            btn.Pressed += () => OnCardClicked(btn);
-
+            btn.ButtonDown += () => OnCardClicked(btn);
             _handCardsContainer.AddChild(btn);
             _humanHandCards.Add(btn);
         }
@@ -348,6 +346,32 @@ public partial class DouDizhuGameManager : Control
             if (role == _humanRole)
             {
                 LayoutHandCardsArched(_humanHandCards);
+            }
+        }
+    }
+
+    public override void _Input(InputEvent @event)
+    {
+        // 🌟 新增：全局鼠标右键检测
+        if (@event is InputEventMouseButton mb && mb.ButtonIndex == MouseButton.Right && mb.Pressed)
+        {
+            if (_selectedCards.Count > 0)
+            {
+                // 如果当前有选中的牌，则一键取消选中
+                foreach (var cardBtn in _selectedCards)
+                {
+                    cardBtn.ToggleSelection(false);
+                }
+                _selectedCards.Clear();
+            }
+            else
+            {
+                // 如果当前没有选中的牌，则一键选中所有手牌
+                foreach (var cardBtn in _humanHandCards)
+                {
+                    cardBtn.ToggleSelection(true);
+                    _selectedCards.Add(cardBtn);
+                }
             }
         }
     }

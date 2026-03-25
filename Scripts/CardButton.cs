@@ -89,6 +89,13 @@ public partial class CardButton : TextureButton
     private void OnMouseEntered()
     {
         _isHovered = true;
+
+        // 🌟 核心滑动多选逻辑：当鼠标滑入且左键按住时，发射 ButtonDown 信号
+        if (Input.IsMouseButtonPressed(MouseButton.Left))
+        {
+            EmitSignal(SignalName.ButtonDown);
+        }
+
         UpdateTransform();
     }
 
@@ -133,7 +140,7 @@ public partial class CardButton : TextureButton
         _tween.SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
 
         // 5. 让 Position 和 Rotation 在 0.15 秒内平滑过渡到目标值
-        _tween.TweenProperty(this, "position", targetPosition, 0.15f);
-        _tween.TweenProperty(this, "rotation", BaseRotation, 0.15f);
+        _tween.TweenProperty(this, "position", targetPosition, 0.1f);
+        _tween.TweenProperty(this, "rotation", BaseRotation, 0.1f);
     }
 }

@@ -211,8 +211,8 @@ public class Game
         if (!GameOver)
         {
             GetActingPlayerPosition();
-            GameInfoset = GetInfoset(); // 生成下一个人的观察视野
         }
+        GameInfoset = GetInfoset(); // 生成下一个人的观察视野
     }
 
     /// <summary>
