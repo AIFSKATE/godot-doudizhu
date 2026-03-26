@@ -10,6 +10,9 @@ public partial class DouDizhuGameManager : Control
     [Export] private Label _lblUpFarmer;
     [Export] private Label _lblDownFarmer;
     [Export] private Label _lblGameStatus;
+    [Export] private Label _lblUpFarmerScore;
+    [Export] private Label _lblDownFarmerScore;
+    [Export] private Label _lblGameStatusScore;
     [Export] private Label _lblBombCount;
 
     [Export] private Control _playedCardsSelf;
@@ -47,6 +50,23 @@ public partial class DouDizhuGameManager : Control
 
     // 全局发牌计数器
     private Dictionary<int, int> _globalSuitCounter = new Dictionary<int, int>();
+
+    private const int ScoreBase = 100;
+    private string _statusMessage = "";
+
+    private class PlayerBattleStats
+    {
+        public int Wins;
+        public int Losses;
+        public int Score;
+    }
+
+    private readonly Dictionary<string, PlayerBattleStats> _playerStats = new Dictionary<string, PlayerBattleStats>
+    {
+        { "landlord", new PlayerBattleStats() },
+        { "landlord_up", new PlayerBattleStats() },
+        { "landlord_down", new PlayerBattleStats() }
+    };
 
     public override void _Ready()
     {
@@ -86,16 +106,24 @@ public partial class DouDizhuGameManager : Control
     }
 
     // 🌟 待机状态：显示开始按钮，隐藏所有出牌相关 UI
-    private void EnterStandbyState()
+    private void EnterStandbyState(bool keepStatusMessage = false)
     {
         _btnStart.Visible = true;
         _btnStart.Disabled = false;
 
         SetActionButtonsVisible(false);
 
-        if (_lblGameStatus != null) _lblGameStatus.Text = "点击【开始游戏】进入对局";
-        if (_lblUpFarmer != null) _lblUpFarmer.Text = "";
-        if (_lblDownFarmer != null) _lblDownFarmer.Text = "";
+        if (!keepStatusMessage)
+        {
+            SetStatusMessage("点击【开始游戏】进入对局");
+        }
+        else
+        {
+            RefreshGameStatusLabel();
+        }
+
+        RefreshFarmerLabels();
+
         if (_lblBombCount != null) _lblBombCount.Text = "";
     }
 
@@ -142,7 +170,7 @@ public partial class DouDizhuGameManager : Control
 
             if (actingRole == _humanRole)
             {
-                _lblGameStatus.Text = "轮到你了，请出牌！";
+                SetStatusMessage("轮到你了，请出牌！");
                 EnableActionButtons(true);
 
                 _humanTurnTcs = new TaskCompletionSource<List<int>>();
@@ -152,7 +180,7 @@ public partial class DouDizhuGameManager : Control
             }
             else
             {
-                _lblGameStatus.Text = (actingRole == "landlord_up" ? "上家(AI)" : "下家(AI)") + " 思考中...";
+                SetStatusMessage((actingRole == "landlord_up" ? "上家(AI)" : "下家(AI)") + " 思考中...");
                 chosenAction = GetAIAction(_currentObs, actingRole);
             }
 
@@ -166,9 +194,10 @@ public partial class DouDizhuGameManager : Control
         }
 
         string winner = _env.GameWinner;
-        _lblGameStatus.Text = winner == "landlord" ? "游戏结束！地主获胜！" : "游戏结束！农民获胜！";
+        int bombNum = _env.GameBombNum;
+        ApplyRoundResult(winner, bombNum);
 
-        EnterStandbyState();
+        EnterStandbyState(keepStatusMessage: true);
     }
 
     private void InitializeHand()
@@ -201,12 +230,89 @@ public partial class DouDizhuGameManager : Control
         int upCardsLeft = info.NumCardsLeftDict["landlord_up"];
         int downCardsLeft = info.NumCardsLeftDict["landlord_down"];
 
-        if (_lblUpFarmer != null) _lblUpFarmer.Text = $"上家 (AI)\n剩余手牌: {upCardsLeft} 张";
-        if (_lblDownFarmer != null) _lblDownFarmer.Text = $"下家 (AI)\n剩余手牌: {downCardsLeft} 张";
+        RefreshFarmerLabels(upCardsLeft, downCardsLeft);
+        RefreshGameStatusLabel();
         if (_lblBombCount != null) _lblBombCount.Text = $"当前炸弹数: {info.BombNum}";
 
         UpdateHiddenCards(_upCardsContainer, upCardsLeft, "up");
         UpdateHiddenCards(_downCardsContainer, downCardsLeft, "down");
+    }
+
+    private void SetStatusMessage(string message)
+    {
+        _statusMessage = message ?? "";
+        RefreshGameStatusLabel();
+    }
+
+    private void RefreshGameStatusLabel()
+    {
+        if (_lblGameStatus == null) return;
+
+        var landlordStats = _playerStats["landlord"];
+        _lblGameStatus.Text =
+            $"{_statusMessage}\n地主(你) 战绩: {landlordStats.Wins}胜{landlordStats.Losses}负  积分: {FormatSignedScore(landlordStats.Score)}";
+    }
+
+    private void RefreshFarmerLabels(int? upCardsLeft = null, int? downCardsLeft = null)
+    {
+        string upCardsText = upCardsLeft.HasValue ? upCardsLeft.Value.ToString() : "--";
+        string downCardsText = downCardsLeft.HasValue ? downCardsLeft.Value.ToString() : "--";
+
+        var upStats = _playerStats["landlord_up"];
+        var downStats = _playerStats["landlord_down"];
+
+        if (_lblUpFarmer != null)
+        {
+            _lblUpFarmer.Text =
+                $"上家 (AI)\n剩余手牌: {upCardsText} 张\n战绩: {upStats.Wins}胜{upStats.Losses}负\n积分: {FormatSignedScore(upStats.Score)}";
+        }
+
+        if (_lblDownFarmer != null)
+        {
+            _lblDownFarmer.Text =
+                $"下家 (AI)\n剩余手牌: {downCardsText} 张\n战绩: {downStats.Wins}胜{downStats.Losses}负\n积分: {FormatSignedScore(downStats.Score)}";
+        }
+    }
+
+    private void ApplyRoundResult(string winner, int bombNum)
+    {
+        int multiplier = Math.Max(1, (int)Math.Pow(2, bombNum));
+        int farmerDelta = ScoreBase * multiplier;
+        int landlordDelta = farmerDelta * 2;
+        bool landlordWin = winner == "landlord";
+
+        UpdatePlayerStats("landlord", landlordWin, landlordDelta);
+        UpdatePlayerStats("landlord_up", !landlordWin, farmerDelta);
+        UpdatePlayerStats("landlord_down", !landlordWin, farmerDelta);
+
+        string winnerText = landlordWin ? "游戏结束！地主(你)获胜！" : "游戏结束！农民获胜！";
+        int landlordRoundDelta = landlordWin ? landlordDelta : -landlordDelta;
+        int farmerRoundDelta = landlordWin ? -farmerDelta : farmerDelta;
+
+        SetStatusMessage(
+            $"{winnerText} 炸弹: {bombNum} 倍率: x{multiplier}\n本局分数 地主: {FormatSignedScore(landlordRoundDelta)}  农民: {FormatSignedScore(farmerRoundDelta)}");
+        RefreshFarmerLabels();
+    }
+
+    private void UpdatePlayerStats(string role, bool isWin, int delta)
+    {
+        if (!_playerStats.TryGetValue(role, out var stats)) return;
+
+        if (isWin)
+        {
+            stats.Wins += 1;
+            stats.Score += delta;
+        }
+        else
+        {
+            stats.Losses += 1;
+            stats.Score -= delta;
+        }
+    }
+
+    private string FormatSignedScore(int score)
+    {
+        return score > 0 ? $"+{score}" : score.ToString();
     }
 
     private void UpdateHiddenCards(Control container, int targetCount, string role)
@@ -494,7 +600,7 @@ public partial class DouDizhuGameManager : Control
         }
         else
         {
-            _lblGameStatus.Text = "非法出牌！请检查规则或是否能大过上家。";
+            SetStatusMessage("非法出牌！请检查规则或是否能大过上家。");
         }
     }
 
@@ -509,7 +615,7 @@ public partial class DouDizhuGameManager : Control
         }
         else
         {
-            _lblGameStatus.Text = "当前回合你必须出牌！不能 Pass。";
+            SetStatusMessage("当前回合你必须出牌！不能 Pass。");
         }
     }
 
@@ -519,7 +625,7 @@ public partial class DouDizhuGameManager : Control
 
         if (hintAction != null && hintAction.Count > 0)
         {
-            _lblGameStatus.Text = "AI 建议：出这手牌";
+            SetStatusMessage("AI 建议：出这手牌。");
             foreach (var cardBtn in _selectedCards) cardBtn.ToggleSelection(false);
             _selectedCards.Clear();
 
@@ -537,7 +643,7 @@ public partial class DouDizhuGameManager : Control
         }
         else
         {
-            _lblGameStatus.Text = "AI 建议：要不起，请点击【不出】！";
+            SetStatusMessage("AI 建议：要不起，请点击【不出】！");
             foreach (var cardBtn in _selectedCards) cardBtn.ToggleSelection(false);
             _selectedCards.Clear();
         }

@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://de0si45yvrhh2" path="res://Scenes/DouDizhuGameManager.cs" id="1_sogkt"]
 [ext_resource type="Theme" uid="uid://dfcy7xl5v3asn" path="res://UI/DouDiZhu.tres" id="2_d6eoc"]
 
-[node name="DouDizhuGameManager" type="Control" unique_id=138171513 node_paths=PackedStringArray("_lblUpFarmer", "_lblDownFarmer", "_lblGameStatus", "_lblBombCount", "_playedCardsSelf", "_playedCardsUp", "_playedCardsDown", "_upCardsContainer", "_downCardsContainer", "_handCardsContainer", "_btnStart", "_btnPlay", "_btnPass", "_btnHint")]
+[node name="DouDizhuGameManager" type="Control" unique_id=138171513 node_paths=PackedStringArray("_lblUpFarmer", "_lblDownFarmer", "_lblGameStatus", "_lblUpFarmerScore", "_lblDownFarmerScore", "_lblGameStatusScore", "_lblBombCount", "_playedCardsSelf", "_playedCardsUp", "_playedCardsDown", "_upCardsContainer", "_downCardsContainer", "_handCardsContainer", "_btnStart", "_btnPlay", "_btnPass", "_btnHint")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -14,6 +14,9 @@ script = ExtResource("1_sogkt")
 _lblUpFarmer = NodePath("_lblUpFarmer")
 _lblDownFarmer = NodePath("_lblDownFarmer")
 _lblGameStatus = NodePath("_lblGameStatus")
+_lblUpFarmerScore = NodePath("_lblUpFarmerScore")
+_lblDownFarmerScore = NodePath("_lblDownFarmerScore")
+_lblGameStatusScore = NodePath("_lblGameStatusScore")
 _lblBombCount = NodePath("_lblBombCount")
 _playedCardsSelf = NodePath("_playedCardsSelf")
 _playedCardsUp = NodePath("_playedCardsUp")
@@ -45,6 +48,15 @@ offset_bottom = 150.0
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="_lblUpFarmerScore" type="Label" parent="." unique_id=860080118]
+layout_mode = 1
+offset_left = 100.0
+offset_top = 150.0
+offset_right = 300.0
+offset_bottom = 200.0
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="_lblDownFarmer" type="Label" parent="." unique_id=866943629]
 layout_mode = 1
 anchors_preset = 1
@@ -58,7 +70,33 @@ grow_horizontal = 0
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="_lblDownFarmerScore" type="Label" parent="." unique_id=1658249369]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -300.0
+offset_top = 150.0
+offset_right = -100.0
+offset_bottom = 200.0
+grow_horizontal = 0
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="_lblGameStatus" type="Label" parent="." unique_id=1431884749]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 150.0
+offset_right = 100.0
+offset_bottom = 200.0
+grow_horizontal = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="_lblGameStatusScore" type="Label" parent="." unique_id=2077485714]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
