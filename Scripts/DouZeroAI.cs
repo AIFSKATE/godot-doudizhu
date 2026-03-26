@@ -75,16 +75,25 @@ public static class DouZeroAI
         // 【情况 A】：模型输出的得分是 Int64 (long) 类型
         if (firstOutput.Value is Tensor<long> longTensor)
         {
-            long[] scores = longTensor.ToArray(); // 拿到所有牌型的得分数组
-            long maxScore = long.MinValue;
+            long[] resultsArray = longTensor.ToArray();
 
-            // 遍历所有得分，手动执行 ArgMax 寻找最高概率/得分的动作
-            for (int i = 0; i < scores.Length; i++)
+            // 🌟 破案核心：如果数组长度只有 1，说明模型直接输出了最终的动作索引！
+            if (resultsArray.Length == 1)
             {
-                if (scores[i] > maxScore)
+                bestIdx = (int)resultsArray[0];
+                // GD.Print($"[AI 推理] 模型直接给出了最优答案，索引是: {bestIdx}");
+            }
+            // （兜底防御）如果真的是一堆 long 类型的打分（极其罕见）
+            else
+            {
+                long maxScore = long.MinValue;
+                for (int i = 0; i < resultsArray.Length; i++)
                 {
-                    maxScore = scores[i];
-                    bestIdx = i;
+                    if (resultsArray[i] > maxScore)
+                    {
+                        maxScore = resultsArray[i];
+                        bestIdx = i;
+                    }
                 }
             }
         }

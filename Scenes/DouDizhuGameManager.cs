@@ -581,9 +581,18 @@ public partial class DouDizhuGameManager : Control
             float[] xFlat = Flatten2D(obs.XBatch);
             float[] zFlat = Flatten3D(obs.ZBatch);
 
-            if (role == "landlord") actionIdx = DouZeroAI.GetLandlordAction(zFlat, xFlat);
-            else if (role == "landlord_up") actionIdx = DouZeroAI.GetUpFarmerAction(zFlat, xFlat);
-            else if (role == "landlord_down") actionIdx = DouZeroAI.GetDownFarmerAction(zFlat, xFlat);
+            if (role == "landlord")
+            {
+                actionIdx = DouZeroAI.GetLandlordAction(zFlat, xFlat);
+            }
+            else if (role == "landlord_up")
+            {
+                actionIdx = DouZeroAI.GetUpFarmerAction(zFlat, xFlat);
+            }
+            else if (role == "landlord_down")
+            {
+                actionIdx = DouZeroAI.GetDownFarmerAction(zFlat, xFlat);
+            }
 
             if (actionIdx < 0 || actionIdx >= legalActions.Count) actionIdx = 0;
         }
