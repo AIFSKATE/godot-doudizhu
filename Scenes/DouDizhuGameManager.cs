@@ -52,7 +52,6 @@ public partial class DouDizhuGameManager : Control
     private Dictionary<int, int> _globalSuitCounter = new Dictionary<int, int>();
 
     private const int ScoreBase = 100;
-    private string _statusMessage = "";
 
     private class PlayerBattleStats
     {
@@ -73,6 +72,7 @@ public partial class DouDizhuGameManager : Control
         CheckAndConnectUI();
         DouZeroAI.Initialize();
 
+        RefreshScoreLabels();
         // 🌟 游戏加载完毕，不直接开始，而是进入待机状态
         EnterStandbyState();
     }
@@ -119,7 +119,7 @@ public partial class DouDizhuGameManager : Control
         }
         else
         {
-            RefreshGameStatusLabel();
+            SetStatusMessage();
         }
 
         RefreshFarmerLabels();
@@ -230,27 +230,18 @@ public partial class DouDizhuGameManager : Control
         int upCardsLeft = info.NumCardsLeftDict["landlord_up"];
         int downCardsLeft = info.NumCardsLeftDict["landlord_down"];
 
+        // UI 刷新瘦身：只刷新对局相关的动态文本，不再涉及分数
         RefreshFarmerLabels(upCardsLeft, downCardsLeft);
-        RefreshGameStatusLabel();
+        SetStatusMessage();
         if (_lblBombCount != null) _lblBombCount.Text = $"当前炸弹数: {info.BombNum}";
 
         UpdateHiddenCards(_upCardsContainer, upCardsLeft, "up");
         UpdateHiddenCards(_downCardsContainer, downCardsLeft, "down");
     }
 
-    private void SetStatusMessage(string message)
+    private void SetStatusMessage(string message = null)
     {
-        _statusMessage = message ?? "";
-        RefreshGameStatusLabel();
-    }
-
-    private void RefreshGameStatusLabel()
-    {
-        if (_lblGameStatus == null) return;
-
-        var landlordStats = _playerStats["landlord"];
-        _lblGameStatus.Text =
-            $"{_statusMessage}\n地主(你) 战绩: {landlordStats.Wins}胜{landlordStats.Losses}负  积分: {FormatSignedScore(landlordStats.Score)}";
+        _lblGameStatus.Text = message ?? null;
     }
 
     private void RefreshFarmerLabels(int? upCardsLeft = null, int? downCardsLeft = null)
@@ -258,19 +249,36 @@ public partial class DouDizhuGameManager : Control
         string upCardsText = upCardsLeft.HasValue ? upCardsLeft.Value.ToString() : "--";
         string downCardsText = downCardsLeft.HasValue ? downCardsLeft.Value.ToString() : "--";
 
-        var upStats = _playerStats["landlord_up"];
-        var downStats = _playerStats["landlord_down"];
-
         if (_lblUpFarmer != null)
         {
-            _lblUpFarmer.Text =
-                $"上家 (AI)\n剩余手牌: {upCardsText} 张\n战绩: {upStats.Wins}胜{upStats.Losses}负\n积分: {FormatSignedScore(upStats.Score)}";
+            _lblUpFarmer.Text = $"上家 (AI)\n剩余手牌: {upCardsText} 张";
         }
 
         if (_lblDownFarmer != null)
         {
-            _lblDownFarmer.Text =
-                $"下家 (AI)\n剩余手牌: {downCardsText} 张\n战绩: {downStats.Wins}胜{downStats.Losses}负\n积分: {FormatSignedScore(downStats.Score)}";
+            _lblDownFarmer.Text = $"下家 (AI)\n剩余手牌: {downCardsText} 张";
+        }
+    }
+
+    // 🌟 单独剥离出来的战绩和分数面板更新（只在必要时调用）
+    private void RefreshScoreLabels()
+    {
+        if (_lblGameStatusScore != null)
+        {
+            var landlordStats = _playerStats["landlord"];
+            _lblGameStatusScore.Text = $"战绩: {landlordStats.Wins}胜{landlordStats.Losses}负  积分: {FormatSignedScore(landlordStats.Score)}";
+        }
+
+        if (_lblUpFarmerScore != null)
+        {
+            var upStats = _playerStats["landlord_up"];
+            _lblUpFarmerScore.Text = $"战绩: {upStats.Wins}胜{upStats.Losses}负\n积分: {FormatSignedScore(upStats.Score)}";
+        }
+
+        if (_lblDownFarmerScore != null)
+        {
+            var downStats = _playerStats["landlord_down"];
+            _lblDownFarmerScore.Text = $"战绩: {downStats.Wins}胜{downStats.Losses}负\n积分: {FormatSignedScore(downStats.Score)}";
         }
     }
 
@@ -291,7 +299,9 @@ public partial class DouDizhuGameManager : Control
 
         SetStatusMessage(
             $"{winnerText} 炸弹: {bombNum} 倍率: x{multiplier}\n本局分数 地主: {FormatSignedScore(landlordRoundDelta)}  农民: {FormatSignedScore(farmerRoundDelta)}");
-        RefreshFarmerLabels();
+
+        // 3. 游戏结束，最后统一刷新一次分数面板
+        RefreshScoreLabels();
     }
 
     private void UpdatePlayerStats(string role, bool isWin, int delta)
